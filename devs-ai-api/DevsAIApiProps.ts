@@ -1,3 +1,3 @@
 export interface DevsAIApiProps {
-    task: string;
+  task: string;
 }

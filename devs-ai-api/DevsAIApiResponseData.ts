@@ -1,4 +1,4 @@
 export interface DevsAIApiResponseData {
-    code: number;
-    message: string;
+  code: number;
+  message: string;
 }
