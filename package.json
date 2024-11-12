@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "poligon": "bun run poligon/app.ts",
-    "xyz": "bun run xyz/app.ts"
+    "S01E01": "bun run S01E01/app.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
