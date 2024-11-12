@@ -3,12 +3,19 @@
   "module": "index.ts",
   "type": "module",
   "scripts": {
-    "poligon": "bun run poligon/app.ts"
+    "poligon": "bun run poligon/app.ts",
+    "xyz": "bun run xyz/app.ts"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/jsdom": "^21.1.7"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "jsdom": "^25.0.1",
+    "openai": "^4.72.0",
+    "prettier": "^3.3.3"
   }
 }
