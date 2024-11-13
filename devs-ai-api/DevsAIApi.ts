@@ -8,6 +8,7 @@ export class DevsAIApi {
 
   constructor(private readonly props: DevsAIApiProps) {
     this.task = props.task;
+    this.AI_DEVS_API_DOMAIN = props.api_url || this.AI_DEVS_API_DOMAIN;
   }
 
   public async verify<T>(answer: T): Promise<void> {
@@ -31,5 +32,22 @@ export class DevsAIApi {
 
     console.log('--- VERIFY ---');
     console.log(data.message);
+  }
+
+  public async raw_verify<T, U>(data: T): Promise<U> {
+    const response = await fetch(`${this.AI_DEVS_API_DOMAIN}/verify`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    const responseData: U = await response.json();
+
+    console.log('--- RAW VERIFY ---');
+    console.log(responseData);
+
+    return responseData;
   }
 }
