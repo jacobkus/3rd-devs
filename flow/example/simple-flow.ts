@@ -1,6 +1,7 @@
 import { ChatOpenAI } from 'flow/chat-client/chat-openai';
 import { ChatAnthropic } from 'flow/chat-client/chat-anthropic';
 import { ChatOllama } from 'flow/chat-client/chat-ollama';
+import { UserMessage } from 'flow/message/user-message';
 
 const chatOpenAI = new ChatOpenAI({
   model: 'gpt-4o-mini',
@@ -17,7 +18,7 @@ const chatOllama = new ChatOllama({
   temperature: 0.7,
 });
 
-const messages = [{ role: 'user', content: 'Write a haiku about AI' }];
+const messages = [new UserMessage({ content: 'Write a haiku about AI' })];
 
 const openAIResponse = await chatOpenAI.predict(messages);
 const anthropicResponse = await chatAnthropic.predict(messages);

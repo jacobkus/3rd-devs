@@ -1,4 +1,4 @@
 export interface BaseMessage {
-  role: string;
+  role: 'user' | 'assistant';
   content: string;
 }
