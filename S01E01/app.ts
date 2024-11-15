@@ -1,6 +1,6 @@
 import { JSDOM } from 'jsdom';
-import { OpenAIService } from '../services/OpenAIService';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+import { OpenAIService } from 'services/OpenAIService';
 
 const XYZ_DOMAIN = process.env.XYZ_DOMAIN ?? '';
 const XYZ_USERNAME = process.env.XYZ_USERNAME ?? '';

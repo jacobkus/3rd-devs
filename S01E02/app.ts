@@ -1,6 +1,6 @@
-import { DevsAIApi } from '../devs-ai-api/DevsAIApi.ts';
-import { OpenAIService } from '../services/OpenAIService.ts';
+import { DevsAIApi } from 'devs-ai-api/DevsAIApi';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+import { OpenAIService } from 'services/OpenAIService';
 
 async function getTaskRequirements() {
   const response = await fetch(`${process.env.XYZ_DOMAIN}/files/0_13_4b.txt`);
