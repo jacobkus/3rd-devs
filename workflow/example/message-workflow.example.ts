@@ -25,7 +25,7 @@ const workflow = new WorkFlow<MessageState>({ state: MessageState })
   .addEdge('__start__', 'predictCompletion');
 
 const messages: BaseMessage[] = [
-  new UserMessage({ content: 'Write a haiku about AI' }),
+  new UserMessage({ content: 'Write a haiku about ai' }),
 ];
 
 await workflow.predict({ messages });

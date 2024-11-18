@@ -40,7 +40,7 @@ export class LangfuseService {
     span: SpanElement,
     params: SpanParams,
   ): Promise<void> {
-    await span.update(params);
+    await span.end(params);
   }
 
   public createGeneration(
@@ -54,7 +54,7 @@ export class LangfuseService {
     generation: GenerationElement,
     params: GenerationParams,
   ): Promise<void> {
-    await generation.update(params);
+    await generation.end(params);
   }
 
   public async finalizeTrace(

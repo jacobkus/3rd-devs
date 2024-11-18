@@ -37,8 +37,6 @@ export class TraceFlow {
     input: any[],
     options?: TraceOptions,
   ): Promise<TraceElement | SpanElement | GenerationElement> {
-    console.log(this.traceStack.map((e) => e.id));
-
     const elementName = `(${options?.tier}) ${
       options?.tier === WorkTier.NODE ||
       options?.tier === WorkTier.CONDITIONAL_EDGE
@@ -140,8 +138,6 @@ export class TraceFlow {
         const input = args[0];
 
         try {
-          console.log('invoking', options?.tier);
-
           currentElement = await traceflow.handleTraceStart(
             this,
             input,
