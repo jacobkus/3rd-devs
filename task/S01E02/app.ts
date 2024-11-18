@@ -1,4 +1,4 @@
-import { DevsAIApi } from 'devs-ai-api/DevsAIApi';
+import { DevsAIApi } from '../../devs-ai/DevsAIApi';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { OpenAIService } from 'services/OpenAIService';
 

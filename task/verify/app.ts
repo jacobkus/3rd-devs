@@ -1,4 +1,4 @@
-import { DevsAIApi } from 'devs-ai-api/DevsAIApi';
+import { DevsAIApi } from '../../devs-ai/DevsAIApi';
 const devsai = new DevsAIApi({ task: 'POLIGON' });
 
 const response = await fetch(`${process.env.AI_DEVS_API_DOMAIN}/dane.txt`);
