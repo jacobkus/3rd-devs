@@ -11,5 +11,5 @@ export interface NormalizedCompletion<RawResponse> {
     role: 'assistant';
     type: string; // Anthropic specific
   };
-  raw: RawResponse;
+  raw?: RawResponse;
 }

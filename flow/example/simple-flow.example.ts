@@ -18,7 +18,7 @@ const chatOllama = new ChatOllama({
   temperature: 0.7,
 });
 
-const messages = [new UserMessage({ content: 'Write a haiku about AI' })];
+const messages = [new UserMessage({ content: 'Write a haiku about ai' })];
 
 const openAIResponse = await chatOpenAI.predict(messages);
 const anthropicResponse = await chatAnthropic.predict(messages);

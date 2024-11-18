@@ -1,14 +1,17 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { BaseMessage } from 'flow/message/base-message.interface';
-import type { ChatClient } from 'flow/chat-client/chat-client.interface.ts';
+import { ChatClient } from 'flow/chat-client/chat-client';
 import type { NormalizedCompletion } from 'flow/chat-client/normalized-completion.interface';
 import { AssistantMessage } from 'flow/message/assistant-message';
+import { traceflow } from 'traceflow/core/traceflow';
+import { WorkType } from 'traceflow/core/enum/work-type.enum';
+import { WorkTier } from 'traceflow/core/enum/work-tier.enum';
 
 type AnthropicResponseMessage = Anthropic.Message & {
   content: Array<{ text: string }>;
 };
 
-export class ChatAnthropic implements ChatClient {
+export class ChatAnthropic extends ChatClient<AnthropicResponseMessage> {
   private client: Anthropic;
   private readonly params: Omit<
     Anthropic.Messages.MessageCreateParams,
@@ -20,16 +23,25 @@ export class ChatAnthropic implements ChatClient {
       max_tokens: number;
     },
   ) {
+    super();
     this.client = new Anthropic();
     this.params = params;
   }
 
+  @traceflow.trace({
+    name: 'ChatAnthropic',
+    tier: WorkTier.UNIT,
+    type: WorkType.GENERATION,
+  })
   async predict(
     messages: BaseMessage[],
   ): Promise<AssistantMessage<AnthropicResponseMessage>> {
     const response = (await this.client.messages.create({
       ...this.params,
-      messages,
+      messages: messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      })),
     } as Anthropic.Messages.MessageCreateParams)) as AnthropicResponseMessage;
 
     const metadata: NormalizedCompletion<AnthropicResponseMessage> = {
@@ -47,7 +59,6 @@ export class ChatAnthropic implements ChatClient {
         role: response.role,
         type: response.type,
       },
-      raw: response,
     };
 
     return new AssistantMessage({ content: metadata.text, metadata });

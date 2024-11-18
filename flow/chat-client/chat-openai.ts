@@ -3,26 +3,38 @@ import type {
   ChatCompletion,
   ChatCompletionCreateParamsBase,
 } from 'openai/resources/chat/completions';
-import type { ChatClient } from 'flow/chat-client/chat-client.interface';
 import type { BaseMessage } from 'flow/message/base-message.interface';
 import type { NormalizedCompletion } from 'flow/chat-client/normalized-completion.interface';
 import { AssistantMessage } from 'flow/message/assistant-message';
+import { WorkUnit } from 'flow/work/work-unit';
+import { WorkType } from 'traceflow/core/enum/work-type.enum';
+import { WorkTier } from 'traceflow/core/enum/work-tier.enum';
+import { traceflow } from 'traceflow/core/traceflow';
 
-export class ChatOpenAI implements ChatClient {
+export class ChatOpenAI extends WorkUnit {
   private client: OpenAI;
   private readonly params: Omit<ChatCompletionCreateParamsBase, 'messages'>;
 
   constructor(params: Omit<ChatCompletionCreateParamsBase, 'messages'>) {
+    super();
     this.client = new OpenAI();
     this.params = params;
   }
 
+  @traceflow.trace({
+    name: 'ChatOpenAI',
+    tier: WorkTier.UNIT,
+    type: WorkType.GENERATION,
+  })
   async predict(
     messages: BaseMessage[],
   ): Promise<AssistantMessage<ChatCompletion>> {
     const response = (await this.client.chat.completions.create({
       ...this.params,
-      messages,
+      messages: messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      })),
     } as ChatCompletionCreateParamsBase)) as ChatCompletion;
 
     const metadata: NormalizedCompletion<ChatCompletion> = {
@@ -38,7 +50,6 @@ export class ChatOpenAI implements ChatClient {
         role: response.choices[0].message.role,
         type: response.object,
       },
-      raw: response,
     };
 
     return new AssistantMessage({ content: metadata.text, metadata });

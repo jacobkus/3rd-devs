@@ -1,5 +1,5 @@
 import { BaseState } from 'workflow/base/base-state';
-import { Workflow } from 'workflow/core/workflow';
+import { WorkFlow } from 'workflow/core/workflow';
 import { reducer } from 'workflow/reducer/reducer';
 import { w } from 'workflow/core/w';
 
@@ -19,11 +19,11 @@ function node3(state: State): Partial<State> {
   return { str: ' I am happy.' };
 }
 
-function decideMood(state: State): string {
+async function decideMood(state: State): Promise<string> {
   return Math.random() > 0.5 ? 'node2' : 'node3';
 }
 
-const workflow = new Workflow<State>({ state: State })
+const workflow = new WorkFlow<State>({ state: State })
   .addNode('node1', node1)
   .addNode('node2', node2)
   .addNode('node3', node3)

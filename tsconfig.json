@@ -24,11 +24,16 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
 
+    // Decorators
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
     // Add path mapping
     "baseUrl": ".",
     "paths": {
+      "flow/*": ["flow/*"],
       "workflow/*": ["workflow/*"],
-      "flow/*": ["flow/*"]
+      "traceflow/*": ["traceflow/*"]
     }
   }
 }

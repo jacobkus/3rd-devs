@@ -2,7 +2,7 @@ import type { BaseMessage } from 'flow/message/base-message.interface';
 import { UserMessage } from 'flow/message/user-message';
 import { BaseState } from 'workflow/base/base-state';
 import { reducer } from 'workflow/reducer/reducer';
-import { Workflow } from 'workflow/core/workflow';
+import { WorkFlow } from 'workflow/core/workflow';
 import { ChatOpenAI } from 'flow/chat-client/chat-openai';
 import { w } from 'workflow/core/w';
 
@@ -20,7 +20,7 @@ async function predictCompletion(state: MessageState) {
   };
 }
 
-const workflow = new Workflow<MessageState>({ state: MessageState })
+const workflow = new WorkFlow<MessageState>({ state: MessageState })
   .addNode('predictCompletion', predictCompletion)
   .addEdge('__start__', 'predictCompletion');
 

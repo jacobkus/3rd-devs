@@ -3,10 +3,13 @@ import type {
   ChatCompletion,
   ChatCompletionCreateParamsBase,
 } from 'openai/resources/chat/completions';
-import type { ChatClient } from 'flow/chat-client/chat-client.interface';
+import { ChatClient } from 'flow/chat-client/chat-client';
 import type { BaseMessage } from 'flow/message/base-message.interface';
-import type { NormalizedCompletion } from './normalized-completion.interface';
 import { AssistantMessage } from 'flow/message/assistant-message';
+import { traceflow } from 'traceflow/core/traceflow';
+import { WorkType } from 'traceflow/core/enum/work-type.enum';
+import { WorkTier } from 'traceflow/core/enum/work-tier.enum';
+import type { NormalizedCompletion } from 'flow/chat-client/normalized-completion.interface';
 
 type OllamaParams = Partial<
   Omit<Omit<ChatCompletionCreateParamsBase, 'model'>, 'messages'> & {
@@ -14,21 +17,30 @@ type OllamaParams = Partial<
   }
 >;
 
-export class ChatOllama implements ChatClient {
+export class ChatOllama extends ChatClient<ChatCompletion> {
   private client: Ollama;
   private readonly params: OllamaParams;
 
   constructor(params: OllamaParams) {
+    super();
     this.client = new Ollama();
     this.params = params;
   }
 
+  @traceflow.trace({
+    name: 'ChatOllama',
+    tier: WorkTier.UNIT,
+    type: WorkType.GENERATION,
+  })
   async predict(
     messages: BaseMessage[],
   ): Promise<AssistantMessage<ChatCompletion>> {
     const response = (await this.client.chat.completions.create({
       ...this.params,
-      messages,
+      messages: messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      })),
     } as ChatCompletionCreateParamsBase)) as ChatCompletion;
 
     const metadata: NormalizedCompletion<ChatCompletion> = {
@@ -44,7 +56,6 @@ export class ChatOllama implements ChatClient {
         role: response.choices[0].message.role,
         type: response.object,
       },
-      raw: response,
     };
 
     return new AssistantMessage({ content: metadata.text, metadata });
