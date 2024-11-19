@@ -64,4 +64,8 @@ export class LangfuseService {
     await trace.update(params);
     await this.langfuse.flushAsync();
   }
+
+  public async getPrompt(name: string) {
+    return this.langfuse.getPrompt(name);
+  }
 }

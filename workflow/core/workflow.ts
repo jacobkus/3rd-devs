@@ -1,21 +1,21 @@
 import { WorkNode } from 'workflow/work/work-node';
 import { WorkTier } from 'traceflow/core/enum/work-tier.enum';
-import { traceflow } from 'traceflow/core/traceflow.ts';
-import type { BaseState } from 'workflow/base/base-state';
+import { traceflow } from 'traceflow/core/traceflow';
+import { BaseState } from 'workflow/base/base-state';
 import { WorkflowUtil } from 'workflow/core/workflow.util';
 import { WorkConditionalEdge } from 'workflow/work/work-conditional-edge';
 
 export class WorkFlow<T extends BaseState> {
   private nodes = new Map<string, any>();
   private edges = new Map<string, string | WorkConditionalEdge>();
-  private readonly state!: T;
-  private initialState?: Partial<T>;
+  private state: T = new BaseState() as T;
+  private readonly initialStateClass!: new () => T;
 
   private util = new WorkflowUtil();
 
   constructor(options?: { state: new () => T }) {
     if (options?.state) {
-      this.state = this.util.wrapStateWithProxy(options.state);
+      this.initialStateClass = options.state;
     }
 
     this.initialize();
@@ -24,16 +24,12 @@ export class WorkFlow<T extends BaseState> {
   private initialize() {
     this.nodes.set(
       '__start__',
-      new WorkNode('__start__', async () => await this.startNode(this.state)),
+      new WorkNode('__start__', async () => await Promise.resolve()),
     );
     this.nodes.set(
       '__end__',
-      new WorkNode('__end__', async (state: T) => await Promise.resolve(state)),
+      new WorkNode('__end__', async () => await Promise.resolve()),
     );
-  }
-
-  private async startNode(state: T) {
-    return this.initialState;
   }
 
   public addNode(name: string, node: any) {
@@ -54,10 +50,12 @@ export class WorkFlow<T extends BaseState> {
     return this;
   }
 
-  @traceflow.trace({ name: 'WorkFlow', tier: WorkTier.WORKFLOW })
-  public async predict(initialState?: Partial<T>): Promise<T> {
+  @traceflow.trace({ tier: WorkTier.WORKFLOW })
+  public async predict(state?: Partial<T>): Promise<T> {
     let currentNode: string = '__start__';
-    this.initialState = initialState;
+
+    this.state = this.util.wrapStateWithProxy(this.initialStateClass);
+    Object.assign(this.state, state);
 
     while (currentNode !== '__end__') {
       console.log(`\n--- Invoke ---`);
@@ -75,7 +73,7 @@ export class WorkFlow<T extends BaseState> {
       let nextNode: string | undefined;
 
       if (nextNodeOrCondition instanceof WorkConditionalEdge) {
-        nextNode = await nextNodeOrCondition.predict(this.state as T);
+        nextNode = await nextNodeOrCondition.predict(this.state);
       } else {
         nextNode = nextNodeOrCondition;
       }

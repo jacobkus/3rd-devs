@@ -44,11 +44,13 @@ export class TraceFlow {
         : (options?.name ?? options?.tier ?? '')
     }`;
 
+    const inputCopy = JSON.parse(JSON.stringify(input));
+
     if (this.traceStack.length === 0) {
       const trace = await this.traceService!.createTrace({
         id: `work-${uuidv4()}`,
         name: elementName,
-        input,
+        input: inputCopy,
       });
       this.traceStack.push(trace);
     }
@@ -60,7 +62,7 @@ export class TraceFlow {
         parentElement,
         {
           name: elementName,
-          input,
+          input: inputCopy,
           modelParameters: self.params,
         },
       );
@@ -70,7 +72,7 @@ export class TraceFlow {
 
     const span = await this.traceService!.createSpan(parentElement, {
       name: elementName,
-      input,
+      input: inputCopy,
     });
 
     this.traceStack.push(span);
@@ -113,6 +115,7 @@ export class TraceFlow {
           level,
           ...error,
         });
+        this.traceStack.pop();
       }
     } finally {
       this.traceStack.pop();
