@@ -8,6 +8,7 @@ import { ChatOllama } from 'flow/chat-client/chat-ollama';
 import { SystemMessage } from 'flow/message/system-message';
 import { traceflow } from 'traceflow/core/traceflow';
 import { LangfuseService } from 'traceflow/helper/langfuse/langfuse.service';
+import { START, END } from 'workflow/base/node';
 
 traceflow.initialize(new LangfuseService());
 
@@ -27,7 +28,8 @@ async function callModel(state: MessageState) {
 
 const workflow = new WorkFlow<MessageState>({ state: MessageState })
   .addNode('callModel', callModel)
-  .addEdge('__start__', 'callModel');
+  .addEdge(START, 'callModel')
+  .addEdge('callModel', END);
 
 let messages: BaseMessage[] = [
   new SystemMessage({ content: 'Answer ultra-concise' }),

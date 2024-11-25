@@ -1,24 +1,30 @@
-# aidevs3
+# 🌊 *Flow 
 
-_Build a workflow with traceability._
+⚡ Build AGI workflows with traceability ⚡
 
-### Project contains
+## Overview
 
-#### DevsAI
+[*Flow]() is a framework for building AGI workflows with traceability.
 
-- **devsai** - Package with tools for lesson tasks.
-- **task** - Lesson tasks.
-
-#### Frameworks for building advanced LLM applications
-
+### Key Parts
 - **Flow** - LLM SDK with additional tools.
-- **TraceFlow** - Observability with Langfuse.
+- **TraceFlow** - Traceability provided by Langfuse.
 - **WorkFlow** - Engine for defining and executing workflows.
+- **WorkFlow IDE** - Visual editor for interacting with workflows.
 
-Want to test frameworks? Look at examples for each package
+## Installation
+
+```shell
+bun install
+```
+
+## Example
 
 - [Flow](./flow/example)
 - [TraceFlow](./traceflow/example)
 - [WorkFlow](./workflow/example)
+- [WorkFlow IDE](./workflow-ide/diagram)
 
-This project was created using `bun init` in bun v1.1.33. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+## Contributing
+
+For more information on how to contribute, contact me.

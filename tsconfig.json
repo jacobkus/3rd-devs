@@ -33,7 +33,8 @@
     "paths": {
       "flow/*": ["flow/*"],
       "workflow/*": ["workflow/*"],
-      "traceflow/*": ["traceflow/*"]
+      "traceflow/*": ["traceflow/*"],
+      "workflow-ide/*": ["workflow-ide/*"]
     }
   }
 }

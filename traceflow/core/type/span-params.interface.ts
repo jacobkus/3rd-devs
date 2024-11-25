@@ -1,3 +1,5 @@
+import type { TraceLogLevel } from 'traceflow/core/enum/trace-log-level.enum';
+
 export interface SpanParams {
   id?: string;
   startTime?: Date;
@@ -7,4 +9,5 @@ export interface SpanParams {
   statusMessage?: string;
   input?: any;
   output?: any;
+  level?: TraceLogLevel;
 }

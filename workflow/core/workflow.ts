@@ -4,10 +4,11 @@ import { traceflow } from 'traceflow/core/traceflow';
 import { BaseState } from 'workflow/base/base-state';
 import { WorkflowUtil } from 'workflow/core/workflow.util';
 import { WorkConditionalEdge } from 'workflow/work/work-conditional-edge';
+import { START, END } from 'workflow/base/node';
 
 export class WorkFlow<T extends BaseState> {
   private nodes = new Map<string, any>();
-  private edges = new Map<string, string | WorkConditionalEdge>();
+  private edges = new Map<string, string | string[] | WorkConditionalEdge>();
   private state: T = new BaseState() as T;
   private readonly initialStateClass!: new () => T;
 
@@ -23,12 +24,12 @@ export class WorkFlow<T extends BaseState> {
 
   private initialize() {
     this.nodes.set(
-      '__start__',
-      new WorkNode('__start__', async () => await Promise.resolve()),
+      START,
+      new WorkNode(START, async () => await Promise.resolve({})),
     );
     this.nodes.set(
-      '__end__',
-      new WorkNode('__end__', async () => await Promise.resolve()),
+      END,
+      new WorkNode(END, async () => await Promise.resolve({})),
     );
   }
 
@@ -37,7 +38,7 @@ export class WorkFlow<T extends BaseState> {
     return this;
   }
 
-  public addEdge(from: string, to: string) {
+  public addEdge(from: string, to: string | string[]) {
     this.edges.set(from, to);
     return this;
   }
@@ -45,46 +46,172 @@ export class WorkFlow<T extends BaseState> {
   public addConditionalEdges(
     from: string,
     condition: (state: T) => Promise<string>,
+    possibleNextNodes: string[],
   ) {
-    this.edges.set(from, new WorkConditionalEdge(condition.name, condition));
+    this.edges.set(
+      from,
+      new WorkConditionalEdge(condition.name, condition, possibleNextNodes),
+    );
     return this;
   }
 
-  @traceflow.trace({ tier: WorkTier.WORKFLOW })
-  public async predict(state?: Partial<T>): Promise<T> {
-    let currentNode: string = '__start__';
+  private async predictNode(
+    currentNode: string,
+    convergenceNode?: string,
+  ): Promise<void> {
+    if (currentNode === END || currentNode === convergenceNode) {
+      return;
+    }
 
+    console.log(`\n--- Invoke ---`);
+    console.log(`Node -> ${currentNode}`);
+
+    const node = this.nodes.get(currentNode);
+    const flowingState = await node.predict(this.state);
+
+    if (flowingState) {
+      Object.assign(this.state, flowingState);
+      console.log(`State -> ${JSON.stringify(this.state, null, 2)}`);
+    }
+
+    const nextNodeOrCondition = this.edges.get(currentNode);
+    let nextNode: string | undefined;
+
+    if (nextNodeOrCondition instanceof WorkConditionalEdge) {
+      nextNode = await nextNodeOrCondition.predict(this.state);
+    } else if (Array.isArray(nextNodeOrCondition)) {
+      nextNode = await this.parallelPredict(nextNodeOrCondition);
+    } else {
+      nextNode = nextNodeOrCondition;
+    }
+
+    await this.predictNode(nextNode || END, convergenceNode);
+  }
+
+  @traceflow.trace({ name: 'Parallel', tier: WorkTier.PARALLEL_NODE })
+  private async parallelPredict(nodes: string[]) {
+    const convergenceNode = this.findConvergencePoint(nodes);
+    const promises = nodes.map((node) =>
+      this.predictNode(node, convergenceNode),
+    );
+    await Promise.all(promises);
+    return convergenceNode;
+  }
+
+  @traceflow.trace({ tier: WorkTier.WORKFLOW })
+  public async predict(state: Partial<T> = {}): Promise<T> {
     this.state = this.util.wrapStateWithProxy(this.initialStateClass);
     Object.assign(this.state, state);
 
-    while (currentNode !== '__end__') {
-      console.log(`\n--- Invoke ---`);
-      console.log(`Node -> ${currentNode}`);
+    await this.predictNode(START);
+    return this.state;
+  }
 
-      const node = this.nodes.get(currentNode);
-      const flowingState = await node.predict(this.state);
+  private findConvergencePoint(nodes: string[]): string | undefined {
+    const paths = new Map<string, Set<string>>();
 
-      if (flowingState) {
-        Object.assign(this.state, flowingState);
-        console.log(`State -> ${JSON.stringify(this.state, null, 2)}`);
+    const getNextNodes = (current: string): string[] => {
+      const next = this.edges.get(current);
+      if (!next) return [];
+
+      if (typeof next === 'string') {
+        return [next];
+      } else if (next instanceof WorkConditionalEdge) {
+        return next.possibleNextNodes;
+      } else if (Array.isArray(next)) {
+        const nestedConvergence = this.findConvergencePoint(next);
+        return nestedConvergence ? [nestedConvergence] : [];
+      }
+      return [];
+    };
+
+    for (const startNode of nodes) {
+      const allPaths = new Set<string>();
+      const stack = [startNode];
+      const visited = new Set<string>();
+
+      while (stack.length > 0) {
+        const current = stack.pop()!;
+        if (visited.has(current)) continue;
+
+        visited.add(current);
+        allPaths.add(current);
+
+        if (current === END) continue;
+
+        const nextNodes = getNextNodes(current);
+        for (const next of nextNodes) {
+          if (!visited.has(next)) {
+            stack.push(next);
+          }
+        }
       }
 
-      const nextNodeOrCondition = this.edges.get(currentNode);
-      let nextNode: string | undefined;
-
-      if (nextNodeOrCondition instanceof WorkConditionalEdge) {
-        nextNode = await nextNodeOrCondition.predict(this.state);
-      } else {
-        nextNode = nextNodeOrCondition;
-      }
-
-      if (!nextNode) {
-        nextNode = '__end__';
-      }
-
-      currentNode = nextNode;
+      paths.set(startNode, allPaths);
     }
 
-    return this.state;
+    const commonNodes = new Set<string>();
+    const [firstPath] = paths.values();
+    if (!firstPath) return undefined;
+
+    for (const node of firstPath) {
+      if ([...paths.values()].every((path) => path.has(node))) {
+        commonNodes.add(node);
+      }
+    }
+
+    for (const startNode of nodes) {
+      let current = startNode;
+      while (current !== END) {
+        const nextNodes = getNextNodes(current);
+
+        const convergenceNode = nextNodes.find((node) => commonNodes.has(node));
+        if (convergenceNode) {
+          return convergenceNode;
+        }
+
+        if (nextNodes.length !== 1) break;
+        current = nextNodes[0];
+      }
+    }
+
+    return;
+  }
+
+  public getMermaidDiagram(): string {
+    const lines: string[] = [];
+    lines.push('flowchart TD');
+
+    const escapeMermaidId = (id: string): string => {
+      return id.replace(/[^a-zA-Z0-9]/g, '_');
+    };
+
+    for (const [nodeId] of this.nodes) {
+      const escapedId = escapeMermaidId(nodeId);
+      lines.push(`    ${escapedId}["${nodeId}"]`);
+    }
+
+    for (const [source, target] of this.edges.entries()) {
+      const escapedSource = escapeMermaidId(source);
+
+      if (target instanceof WorkConditionalEdge) {
+        target.possibleNextNodes.forEach((nextNode) => {
+          const escapedTarget = escapeMermaidId(nextNode);
+          lines.push(
+            `    ${escapedSource} -->|${target.name}| ${escapedTarget}`,
+          );
+        });
+      } else if (Array.isArray(target)) {
+        target.forEach((nextNode) => {
+          const escapedTarget = escapeMermaidId(nextNode);
+          lines.push(`    ${escapedSource} ==>|parallel| ${escapedTarget}`);
+        });
+      } else if (typeof target === 'string') {
+        const escapedTarget = escapeMermaidId(target);
+        lines.push(`    ${escapedSource} --> ${escapedTarget}`);
+      }
+    }
+
+    return lines.join('\n');
   }
 }

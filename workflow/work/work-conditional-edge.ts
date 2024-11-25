@@ -3,8 +3,9 @@ import { traceflow } from 'traceflow/core/traceflow';
 
 export class WorkConditionalEdge {
   constructor(
-    private name: string,
+    public name: string,
     private fn: (...args: any[]) => Promise<any>,
+    public possibleNextNodes: string[],
   ) {}
 
   @traceflow.trace({ tier: WorkTier.CONDITIONAL_EDGE })

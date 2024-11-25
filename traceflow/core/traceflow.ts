@@ -7,6 +7,7 @@ import type { GenerationElement } from 'traceflow/core/type/generation-element.t
 import type { SpanElement } from 'traceflow/core/type/span-element.type';
 import { v4 as uuidv4 } from 'uuid';
 import type { AssistantMessage } from 'flow/message/assistant-message';
+import { AsyncLocalStorage } from 'async_hooks';
 import { sleep } from 'bun';
 
 type TraceOptions = {
@@ -16,10 +17,20 @@ type TraceOptions = {
   logLevel?: TraceLogLevel;
 };
 
+type TraceContext = {
+  id: string;
+  parentId: string | null;
+  element: TraceElement | SpanElement | GenerationElement;
+  name: string;
+  startTime: number;
+  children: Set<string>;
+};
+
 export class TraceFlow {
   private static instance: TraceFlow;
   private traceService?: LangfuseService;
-  private traceStack: (TraceElement | SpanElement | GenerationElement)[] = [];
+  private asyncContext = new AsyncLocalStorage<TraceContext>();
+  private traces = new Map<string, TraceContext>();
 
   public static getInstance(): TraceFlow {
     if (!TraceFlow.instance) {
@@ -32,96 +43,6 @@ export class TraceFlow {
     this.traceService = service;
   }
 
-  private async handleTraceStart(
-    self: any,
-    input: any[],
-    options?: TraceOptions,
-  ): Promise<TraceElement | SpanElement | GenerationElement> {
-    const elementName = `(${options?.tier}) ${
-      options?.tier === WorkTier.NODE ||
-      options?.tier === WorkTier.CONDITIONAL_EDGE
-        ? self.name
-        : (options?.name ?? options?.tier ?? '')
-    }`;
-
-    const inputCopy = JSON.parse(JSON.stringify(input));
-
-    if (this.traceStack.length === 0) {
-      const trace = await this.traceService!.createTrace({
-        id: `work-${uuidv4()}`,
-        name: elementName,
-        input: inputCopy,
-      });
-      this.traceStack.push(trace);
-    }
-
-    const parentElement = this.traceStack[this.traceStack.length - 1];
-
-    if (options?.type === WorkType.GENERATION) {
-      const generation = await this.traceService!.createGeneration(
-        parentElement,
-        {
-          name: elementName,
-          input: inputCopy,
-          modelParameters: self.params,
-        },
-      );
-      this.traceStack.push(generation);
-      return generation;
-    }
-
-    const span = await this.traceService!.createSpan(parentElement, {
-      name: elementName,
-      input: inputCopy,
-    });
-
-    this.traceStack.push(span);
-    return span;
-  }
-
-  private async handleTraceEnd(
-    element: TraceElement | SpanElement | GenerationElement,
-    output: unknown,
-    options?: TraceOptions,
-    error?: { statusMessage: string; level: TraceLogLevel },
-  ): Promise<void> {
-    try {
-      const level = error?.level || options?.logLevel;
-
-      if (options?.type === WorkType.GENERATION) {
-        const assistantMessage = output as AssistantMessage<any>;
-
-        await this.traceService!.finalizeGeneration(element, {
-          output,
-          usage: {
-            input: assistantMessage.metadata.usage.inputTokens,
-            output: assistantMessage.metadata.usage.outputTokens,
-            total: assistantMessage.metadata.usage.totalTokens,
-          },
-          level,
-          ...error,
-        });
-      } else {
-        await this.traceService!.finalizeSpan(element, {
-          output,
-          level,
-          ...error,
-        });
-      }
-
-      if (this.traceStack.length === 2) {
-        await this.traceService!.finalizeTrace(this.traceStack[0], {
-          output,
-          level,
-          ...error,
-        });
-        this.traceStack.pop();
-      }
-    } finally {
-      this.traceStack.pop();
-    }
-  }
-
   public trace(options?: TraceOptions) {
     return (
       target: unknown,
@@ -130,34 +51,139 @@ export class TraceFlow {
     ): PropertyDescriptor => {
       const originalMethod = descriptor.value;
 
-      descriptor.value = async function (...args: any[]) {
+      descriptor.value = async function (this: any, ...args: any[]) {
         const traceflow = TraceFlow.getInstance();
 
         if (!traceflow.traceService) {
           return originalMethod.apply(this, args);
         }
 
-        let currentElement: TraceElement | SpanElement | GenerationElement;
-        const input = args[0];
+        let element: TraceElement | SpanElement | GenerationElement;
 
         try {
-          currentElement = await traceflow.handleTraceStart(
-            this,
-            input,
-            options,
-          );
-          const result = await originalMethod.apply(this, args);
-          await traceflow.handleTraceEnd(currentElement, result, options);
-          return result;
-        } catch (error) {
-          if (currentElement!) {
-            await traceflow.handleTraceEnd(currentElement, {}, options, {
-              statusMessage:
-                error instanceof Error ? error.message : 'Unknown error',
-              level: TraceLogLevel.ERROR,
+          const executionId = uuidv4();
+          const parentContext = traceflow.asyncContext.getStore();
+
+          const elementName = `(${options?.tier}) ${
+            options?.tier === WorkTier.NODE ||
+            options?.tier === WorkTier.CONDITIONAL_EDGE
+              ? this.name
+              : (options?.name ?? options?.tier ?? '')
+          }`;
+
+          const inputCopy = JSON.parse(JSON.stringify(args[0] ?? {}));
+
+          if (options?.tier === WorkTier.WORKFLOW) {
+            element = await traceflow.traceService.createTrace({
+              id: `work-${uuidv4()}`,
+              name: elementName,
+              input: inputCopy,
             });
+          } else {
+            if (options?.type === WorkType.GENERATION) {
+              element = await traceflow.traceService.createGeneration(
+                parentContext?.element,
+                {
+                  id: `gen-${uuidv4()}`,
+                  name: elementName,
+                  input: inputCopy,
+                  modelParameters: this.params,
+                },
+              );
+            } else {
+              element = await traceflow.traceService.createSpan(
+                parentContext?.element,
+                {
+                  id: `span-${uuidv4()}`,
+                  name: elementName,
+                  input: inputCopy,
+                },
+              );
+            }
           }
-          throw error;
+
+          const context: TraceContext = {
+            id: executionId,
+            parentId: parentContext?.id || null,
+            element,
+            name: elementName,
+            startTime: Date.now(),
+            children: new Set(),
+          };
+
+          if (parentContext) {
+            parentContext.children.add(executionId);
+          }
+
+          traceflow.traces.set(executionId, context);
+
+          // console.log(
+          //   `[${executionId}] Starting ${
+          //     this.name ?? options?.name ?? options?.tier ?? ''
+          //   }${parentContext ? ` (parent: ${parentContext.name})` : ''}`,
+          // );
+
+          const output = await traceflow.asyncContext.run(context, () =>
+            originalMethod.apply(this, args),
+          );
+
+          if (options?.tier === WorkTier.WORKFLOW) {
+            await traceflow.traceService.finalizeTrace(element, {
+              output,
+              level: options?.logLevel,
+            });
+          } else {
+            const assistantMessage = output as AssistantMessage<any>;
+            if (options?.type === WorkType.GENERATION) {
+              await traceflow.traceService.finalizeGeneration(element, {
+                output,
+                usage: {
+                  input: assistantMessage.metadata.usage.inputTokens,
+                  output: assistantMessage.metadata.usage.outputTokens,
+                  total: assistantMessage.metadata.usage.totalTokens,
+                },
+                level: options?.logLevel,
+              });
+            } else {
+              await traceflow.traceService.finalizeSpan(element, {
+                output,
+                level: options?.logLevel,
+              });
+            }
+          }
+
+          // const childrenNames = Array.from(context.children)
+          //   .map((childId) => traceflow.traces.get(childId)?.name)
+          //   .filter(Boolean);
+
+          // console.log(
+          //   `[${executionId}] Completed ${elementName} with children: [${childrenNames.join(', ')}]`,
+          // );
+
+          return output;
+        } catch (error) {
+          const level = TraceLogLevel.ERROR;
+          const errorObject =
+            error instanceof Error ? error.message : 'Unknown error';
+
+          if (options?.tier === WorkTier.WORKFLOW) {
+            await traceflow.traceService.finalizeTrace(element, {
+              level,
+              statusMessage: errorObject,
+            });
+          } else {
+            if (options?.type === WorkType.GENERATION) {
+              await traceflow.traceService.finalizeGeneration(element, {
+                level,
+                statusMessage: errorObject,
+              });
+            } else {
+              await traceflow.traceService.finalizeSpan(element, {
+                level,
+                statusMessage: errorObject,
+              });
+            }
+          }
         } finally {
           await sleep(1);
         }
@@ -168,8 +194,9 @@ export class TraceFlow {
   }
 
   public reset(): void {
-    this.traceStack = [];
     this.traceService = undefined;
+    this.traces.clear();
+    this.asyncContext = new AsyncLocalStorage<TraceContext>();
   }
 }
 

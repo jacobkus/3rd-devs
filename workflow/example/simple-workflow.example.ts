@@ -2,6 +2,12 @@ import { BaseState } from 'workflow/base/base-state';
 import { WorkFlow } from 'workflow/core/workflow';
 import { reducer } from 'workflow/reducer/reducer';
 import { w } from 'workflow/core/w';
+import { START, END } from 'workflow/base/node';
+import { saveWorkflowDiagram } from 'workflow-ide/diagram/save-workflow-diagram';
+import { traceflow } from 'traceflow/core/traceflow';
+import { LangfuseService } from 'traceflow/helper/langfuse/langfuse.service';
+
+traceflow.initialize(new LangfuseService());
 
 class State extends BaseState {
   str = w.string(reducer);
@@ -27,7 +33,11 @@ const workflow = new WorkFlow<State>({ state: State })
   .addNode('node1', node1)
   .addNode('node2', node2)
   .addNode('node3', node3)
-  .addEdge('__start__', 'node1')
-  .addConditionalEdges('node1', decideMood);
+  .addEdge(START, 'node1')
+  .addConditionalEdges('node1', decideMood, ['node2', 'node3'])
+  .addEdge('node2', END)
+  .addEdge('node3', END);
 
 await workflow.predict({ str: 'Hi!' });
+
+saveWorkflowDiagram('simple', workflow);

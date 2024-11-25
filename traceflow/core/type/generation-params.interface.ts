@@ -1,3 +1,5 @@
+import type { TraceLogLevel } from 'traceflow/core/enum/trace-log-level.enum';
+
 export interface GenerationParams {
   id?: string;
   name?: string;
@@ -11,4 +13,5 @@ export interface GenerationParams {
   usage?: any;
   metadata?: any;
   statusMessage?: string;
+  level?: TraceLogLevel;
 }

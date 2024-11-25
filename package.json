@@ -3,15 +3,29 @@
   "module": "index.ts",
   "type": "module",
   "scripts": {
-    "poligon": "bun run poligon/app.ts",
-    "S01E01": "bun run S01E01/app.ts",
-    "S01E02": "bun run S01E02/app.ts"
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "verify": "bun run task/verify/app.ts",
+    "S01E01": "bun run task/S01E01/app.ts",
+    "S01E02": "bun run task/S01E02/app.ts",
+    "S01E03": "bun run task/S01E03/app.ts",
+    "S01E04": "bun run task/S01E04/app.ts",
+    "S02E01": "bun run task/S02E01/app.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/express": "^5.0.0",
     "@types/jsdom": "^21.1.7",
-    "@types/uuidv4": "^5.0.0"
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/uuidv4": "^5.0.0",
+    "@vitejs/plugin-react": "^4.3.3",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "vite": "^5.4.11"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
@@ -19,10 +33,15 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
     "express": "^4.21.1",
+    "groq-sdk": "^0.8.0",
     "jsdom": "^25.0.1",
     "langfuse": "^3.29.1",
+    "mermaid": "^11.4.0",
     "openai": "^4.72.0",
     "prettier": "^3.3.3",
-    "uuidv4": "^6.2.13"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "uuidv4": "^6.2.13",
+    "zod": "^3.23.8"
   }
 }
