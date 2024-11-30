@@ -14,6 +14,6 @@ const model = new ChatOpenAI({
 
 const line = template.line(model).line(parser);
 
-const result = await line.predict('Write a haiku about ai');
+const result = await line.invoke('Write a haiku about ai');
 
 console.log(result);

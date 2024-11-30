@@ -26,7 +26,7 @@ export class ChatOpenAI extends WorkUnit {
     tier: WorkTier.UNIT,
     type: WorkType.GENERATION,
   })
-  async predict(
+  async invoke(
     messages: BaseMessage[],
   ): Promise<AssistantMessage<ChatCompletion>> {
     const response = (await this.client.chat.completions.create({

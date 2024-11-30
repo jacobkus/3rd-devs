@@ -5,7 +5,7 @@ import { WorkTier } from 'traceflow/core/enum/work-tier.enum';
 export class WorkLine {
   constructor(private children: (WorkUnit | WorkLine)[]) {}
 
-  async predict(...args: any[]): Promise<any> {
+  async invoke(...args: any[]): Promise<any> {
     return await this.loop(...args);
   }
 
@@ -17,7 +17,7 @@ export class WorkLine {
   async loop(...args: any[]) {
     for await (const child of this.children) {
       if (child instanceof WorkUnit) {
-        const result = await child.predict(...args);
+        const result = await child.invoke(...args);
         args = [result];
       } else if (child instanceof WorkLine) {
         const result = await child.loop(args);

@@ -9,7 +9,7 @@ export class WorkConditionalEdge {
   ) {}
 
   @traceflow.trace({ tier: WorkTier.CONDITIONAL_EDGE })
-  async predict(...args: any[]): Promise<any> {
+  async invoke(...args: any[]): Promise<any> {
     return this.fn(...args);
   }
 }

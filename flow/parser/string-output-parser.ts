@@ -5,7 +5,7 @@ import type { BaseMessage } from 'flow/message/base-message.interface';
 
 export class StringOutputParser extends WorkUnit {
   @traceflow.trace({ name: 'StringOutputParser', tier: WorkTier.UNIT })
-  async predict(assistantMessage: BaseMessage): Promise<string> {
+  async invoke(assistantMessage: BaseMessage): Promise<string> {
     return assistantMessage.content;
   }
 }

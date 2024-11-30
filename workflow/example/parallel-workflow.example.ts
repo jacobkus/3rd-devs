@@ -19,7 +19,7 @@ class State extends BaseState {
 }
 
 async function processAsync(seconds: number = 1): Promise<void> {
-  await new StringOutputParser().predict(
+  await new StringOutputParser().invoke(
     new UserMessage({
       content: 'Hello, world!',
     }),
@@ -87,7 +87,7 @@ const workflow = new WorkFlow<State>({ state: State })
   .addEdge('buildContext', 'answer')
   .addEdge('answer', END);
 
-const result = await workflow.predict({
+const result = await workflow.invoke({
   question: 'What is the weather in Tokyo?',
 });
 console.log(result);

@@ -22,7 +22,7 @@ const model = new ChatOpenAI({
 
 async function callModel(state: MessageState) {
   return {
-    messages: [await model.predict(state.messages)],
+    messages: [await model.invoke(state.messages)],
   };
 }
 
@@ -35,6 +35,6 @@ const messages: BaseMessage[] = [
   new UserMessage({ content: 'Write a haiku about ai' }),
 ];
 
-await workflow.predict({ messages });
+await workflow.invoke({ messages });
 
 saveWorkflowDiagram('message', workflow);

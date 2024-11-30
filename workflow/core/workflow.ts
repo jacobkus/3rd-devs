@@ -55,7 +55,7 @@ export class WorkFlow<T extends BaseState> {
     return this;
   }
 
-  private async predictNode(
+  private async invokeNode(
     currentNode: string,
     convergenceNode?: string,
   ): Promise<void> {
@@ -67,7 +67,7 @@ export class WorkFlow<T extends BaseState> {
     console.log(`Node -> ${currentNode}`);
 
     const node = this.nodes.get(currentNode);
-    const flowingState = await node.predict(this.state);
+    const flowingState = await node.invoke(this.state);
 
     if (flowingState) {
       Object.assign(this.state, flowingState);
@@ -78,32 +78,32 @@ export class WorkFlow<T extends BaseState> {
     let nextNode: string | undefined;
 
     if (nextNodeOrCondition instanceof WorkConditionalEdge) {
-      nextNode = await nextNodeOrCondition.predict(this.state);
+      nextNode = await nextNodeOrCondition.invoke(this.state);
     } else if (Array.isArray(nextNodeOrCondition)) {
       nextNode = await this.parallelPredict(nextNodeOrCondition);
     } else {
       nextNode = nextNodeOrCondition;
     }
 
-    await this.predictNode(nextNode || END, convergenceNode);
+    await this.invokeNode(nextNode || END, convergenceNode);
   }
 
   @traceflow.trace({ name: 'Parallel', tier: WorkTier.PARALLEL_NODE })
   private async parallelPredict(nodes: string[]) {
     const convergenceNode = this.findConvergencePoint(nodes);
     const promises = nodes.map((node) =>
-      this.predictNode(node, convergenceNode),
+      this.invokeNode(node, convergenceNode),
     );
     await Promise.all(promises);
     return convergenceNode;
   }
 
   @traceflow.trace({ tier: WorkTier.WORKFLOW })
-  public async predict(state: Partial<T> = {}): Promise<T> {
+  public async invoke(state: Partial<T> = {}): Promise<T> {
     this.state = this.util.wrapStateWithProxy(this.initialStateClass);
     Object.assign(this.state, state);
 
-    await this.predictNode(START);
+    await this.invokeNode(START);
     return this.state;
   }
 
@@ -188,7 +188,11 @@ export class WorkFlow<T extends BaseState> {
 
     for (const [nodeId] of this.nodes) {
       const escapedId = escapeMermaidId(nodeId);
-      lines.push(`    ${escapedId}["${nodeId}"]`);
+      if (nodeId === START || nodeId === END) {
+        lines.push(`    ${escapedId}["\\_\\_${nodeId}\\_\\_"]`);
+      } else {
+        lines.push(`    ${escapedId}["${nodeId}"]`);
+      }
     }
 
     for (const [source, target] of this.edges.entries()) {

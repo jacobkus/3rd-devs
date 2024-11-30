@@ -5,7 +5,7 @@ import { traceflow } from 'traceflow/core/traceflow';
 
 export class JsonOutputParser extends WorkUnit {
   @traceflow.trace({ name: 'JsonOutputParser', tier: WorkTier.UNIT })
-  async predict<T>(assistantMessage: AssistantMessage<T>): Promise<T> {
+  async invoke<T>(assistantMessage: AssistantMessage<T>): Promise<T> {
     try {
       return JSON.parse(assistantMessage.content);
     } catch (error) {

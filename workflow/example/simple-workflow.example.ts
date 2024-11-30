@@ -38,6 +38,6 @@ const workflow = new WorkFlow<State>({ state: State })
   .addEdge('node2', END)
   .addEdge('node3', END);
 
-await workflow.predict({ str: 'Hi!' });
+await workflow.invoke({ str: 'Hi!' });
 
 saveWorkflowDiagram('simple', workflow);

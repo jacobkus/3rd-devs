@@ -5,7 +5,7 @@ import { traceflow } from 'traceflow/core/traceflow';
 
 export class StringTemplate extends WorkUnit {
   @traceflow.trace({ name: 'StringTemplate', tier: WorkTier.UNIT })
-  async predict(string: string): Promise<UserMessage[]> {
+  async invoke(string: string): Promise<UserMessage[]> {
     return [new UserMessage({ content: string })];
   }
 }

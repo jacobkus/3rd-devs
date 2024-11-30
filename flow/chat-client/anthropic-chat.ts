@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { BaseMessage } from 'flow/message/base-message.interface';
-import { ChatClient } from 'flow/chat-client/chat-client';
+import { ClientChat } from 'flow/chat-client/client-chat.ts';
 import type { NormalizedCompletion } from 'flow/chat-client/normalized-completion.interface';
 import { AssistantMessage } from 'flow/message/assistant-message';
 import { traceflow } from 'traceflow/core/traceflow';
@@ -11,7 +11,7 @@ type AnthropicResponseMessage = Anthropic.Message & {
   content: Array<{ text: string }>;
 };
 
-export class ChatAnthropic extends ChatClient<AnthropicResponseMessage> {
+export class AnthropicChat extends ClientChat<AnthropicResponseMessage> {
   private client: Anthropic;
   private readonly params: Omit<
     Anthropic.Messages.MessageCreateParams,
@@ -29,11 +29,11 @@ export class ChatAnthropic extends ChatClient<AnthropicResponseMessage> {
   }
 
   @traceflow.trace({
-    name: 'ChatAnthropic',
+    name: 'AnthropicChat',
     tier: WorkTier.UNIT,
     type: WorkType.GENERATION,
   })
-  async predict(
+  async invoke(
     messages: BaseMessage[],
   ): Promise<AssistantMessage<AnthropicResponseMessage>> {
     const response = (await this.client.messages.create({

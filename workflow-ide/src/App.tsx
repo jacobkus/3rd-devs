@@ -16,10 +16,10 @@ export default function App() {
   useEffect(() => {
     mermaid.initialize({
       startOnLoad: true,
-      theme: 'default',
+      theme: 'neutral',
       flowchart: {
         curve: 'basis',
-        padding: 20,
+        padding: 10,
       },
     });
 

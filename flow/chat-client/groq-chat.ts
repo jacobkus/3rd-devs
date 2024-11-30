@@ -11,7 +11,7 @@ import type {
   ChatCompletionCreateParams,
 } from 'groq-sdk/src/resources/chat/completions.js';
 
-export class ChatGroq extends WorkUnit {
+export class GroqChat extends WorkUnit {
   private client: Groq;
   private readonly params: Omit<ChatCompletionCreateParams, 'messages'>;
 
@@ -22,11 +22,11 @@ export class ChatGroq extends WorkUnit {
   }
 
   @traceflow.trace({
-    name: 'ChatGroq',
+    name: 'GroqChat',
     tier: WorkTier.UNIT,
     type: WorkType.GENERATION,
   })
-  async predict(
+  async invoke(
     messages: BaseMessage[],
   ): Promise<AssistantMessage<ChatCompletion>> {
     const response = (await this.client.chat.completions.create({

@@ -12,7 +12,7 @@ const model = new ChatOpenAI({ model: 'gpt-4o-mini' });
 
 const line = prompt.line(model).line(parser);
 
-const result = await line.predict({
+const result = await line.invoke({
   context: 'You are speaking to Jacob.',
   question: 'What is my name?',
 });

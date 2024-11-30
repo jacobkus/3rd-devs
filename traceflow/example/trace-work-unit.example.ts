@@ -9,7 +9,7 @@ const model = new ChatOpenAI({
   model: 'gpt-4o-mini',
 });
 
-const result = await model.predict([
+const result = await model.invoke([
   new UserMessage({ content: 'Write a haiku about ai' }),
 ]);
 

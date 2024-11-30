@@ -26,7 +26,7 @@ async function sentimentAnalysis(state: MessageState) {
   });
 
   return {
-    messages: [await model.predict([sys_prompt, ...state.messages])],
+    messages: [await model.invoke([sys_prompt, ...state.messages])],
   };
 }
 
@@ -37,7 +37,7 @@ async function grammaticalAnalysis(state: MessageState) {
   });
 
   return {
-    messages: [await model.predict([sys_prompt, ...state.messages])],
+    messages: [await model.invoke([sys_prompt, ...state.messages])],
   };
 }
 
@@ -56,4 +56,4 @@ const messages: BaseMessage[] = [
   new UserMessage({ content: 'My dog is too sarcastic.' }),
 ];
 
-await workflow.predict({ messages });
+await workflow.invoke({ messages });

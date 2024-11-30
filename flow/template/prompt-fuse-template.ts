@@ -10,7 +10,7 @@ export class PromptFuseTemplate extends WorkUnit {
   }
 
   @traceflow.trace({ name: 'PromptFuseTemplate', tier: WorkTier.UNIT })
-  public async predict(
+  public async invoke(
     variables: Record<string, string>,
   ): Promise<SystemMessage[]> {
     const compiledPrompt = this.prompt.compile(variables) as string;

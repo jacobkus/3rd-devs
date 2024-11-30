@@ -1,38 +1,38 @@
-import { Ollama } from 'flow/custom-provider/ollama-provider';
 import type {
   ChatCompletion,
   ChatCompletionCreateParamsBase,
 } from 'openai/resources/chat/completions';
-import { ChatClient } from 'flow/chat-client/chat-client';
+import { ClientChat } from 'flow/chat-client/client-chat.ts';
 import type { BaseMessage } from 'flow/message/base-message.interface';
 import { AssistantMessage } from 'flow/message/assistant-message';
 import { traceflow } from 'traceflow/core/traceflow';
 import { WorkType } from 'traceflow/core/enum/work-type.enum';
 import { WorkTier } from 'traceflow/core/enum/work-tier.enum';
 import type { NormalizedCompletion } from 'flow/chat-client/normalized-completion.interface';
+import { MLX } from 'flow/custom-provider/mlx-provider';
 
-type OllamaParams = Partial<
+type MLXParams = Partial<
   Omit<Omit<ChatCompletionCreateParamsBase, 'model'>, 'messages'> & {
     model: string;
   }
 >;
 
-export class ChatOllama extends ChatClient<ChatCompletion> {
-  private client: Ollama;
-  private readonly params: OllamaParams;
+export class MlxChat extends ClientChat<ChatCompletion> {
+  private client: MLX;
+  private readonly params: MLXParams;
 
-  constructor(params: OllamaParams) {
+  constructor(params: MLXParams) {
     super();
-    this.client = new Ollama();
+    this.client = new MLX();
     this.params = params;
   }
 
   @traceflow.trace({
-    name: 'ChatOllama',
+    name: 'MlxChat',
     tier: WorkTier.UNIT,
     type: WorkType.GENERATION,
   })
-  async predict(
+  async invoke(
     messages: BaseMessage[],
   ): Promise<AssistantMessage<ChatCompletion>> {
     const response = (await this.client.chat.completions.create({

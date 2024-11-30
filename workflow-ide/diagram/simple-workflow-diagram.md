@@ -1,6 +1,6 @@
 flowchart TD
-    __start__["__start__"]
-    __end__["__end__"]
+    __start__["\_\___start__\_\_"]
+    __end__["\_\___end__\_\_"]
     node1["node1"]
     node2["node2"]
     node3["node3"]

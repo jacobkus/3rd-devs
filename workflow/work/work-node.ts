@@ -8,7 +8,7 @@ export class WorkNode {
   ) {}
 
   @traceflow.trace({ tier: WorkTier.NODE })
-  async predict(...args: any[]): Promise<any> {
+  async invoke(...args: any[]): Promise<any> {
     return this.fn(...args);
   }
 }
